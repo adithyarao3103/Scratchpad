@@ -1,49 +1,51 @@
+import json
 import os
-import threading
-import http.server
-import socketserver
+import sys
 import webview
 
-
-class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
-    """HTTP request handler with CORS support."""
-    def end_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")  # Allow all origins
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")  # Allow GET and OPTIONS
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")  # Allow Content-Type header
-        super().end_headers()
-
-
-class LocalHTTPServer:
-    def __init__(self, directory, port=8000):
-        self.directory = directory
-        self.port = port
-
-    def start(self):
-        """Start the HTTP server in a separate thread"""
-        handler = CORSRequestHandler
-        os.chdir(self.directory)
-        self.httpd = socketserver.TCPServer(("localhost", self.port), handler)
-        self.thread = threading.Thread(target=self.httpd.serve_forever)
-        self.thread.start()
-
-    def stop(self):
-        """Stop the HTTP server"""
-        self.httpd.shutdown()
-        self.thread.join()
-
-
 class TextScratchpadApp:
-    def __init__(self, server_port):
-        self.server_port = server_port
-
+    def __init__(self):
+        # Load configuration
+        exe_dir = os.path.dirname(sys.executable)
+        # Construct the path to your external file
+        self.config_path = os.path.join(exe_dir, 'display_config.json')
+        self.load_configuration()
+        
+    def load_configuration(self):
+        """Load display configuration from JSON file"""
+        try:
+            with open(self.config_path, 'r') as config_file:
+                self.config = json.load(config_file)
+        except FileNotFoundError:
+            # Default configuration if file doesn't exist
+            self.config = {
+                "font": {
+                    "family": "Arial, sans-serif",
+                    "size": "16px",
+                    "url": ""
+                },
+                "editor": {
+                    "backgroundColor": "#FFFFFF",
+                    "textColor": "#000000",
+                    "lineHeight": "1.6",
+                    "letterSpacing": "0.02em",
+                    "padding": "20px"
+                }
+            }
+        
     def get_html(self):
-        """Generate HTML with dynamic JavaScript fetching the configuration"""
+        """Generate HTML with dynamic styling from configuration"""
+        font_config = self.config.get('font', {})
+        editor_config = self.config.get('editor', {})
+        
+        font_link = f'<link href="{font_config.get("url", "")}" rel="stylesheet">' if font_config.get("url") else ""
+        
         return f'''
         <!DOCTYPE html>
         <html>
         <head>
             <title>Text Scratchpad</title>
+            {font_link}
             <style>
                 html, body {{
                     margin: 0;
@@ -57,6 +59,13 @@ class TextScratchpadApp:
                     border: none;
                     outline: none;
                     resize: none;
+                    font-family: {font_config.get("family", "Arial, sans-serif")};
+                    font-size: {font_config.get("size", "16px")};
+                    background-color: {editor_config.get("backgroundColor", "#FFFFFF")};
+                    color: {editor_config.get("textColor", "#000000")};
+                    line-height: {editor_config.get("lineHeight", "1.6")};
+                    letter-spacing: {editor_config.get("letterSpacing", "0.02em")};
+                    padding: {editor_config.get("padding", "20px")};
                     box-sizing: border-box;
                 }}
             </style>
@@ -65,50 +74,23 @@ class TextScratchpadApp:
             <textarea id="editor" placeholder="Start typing or paste your text here..."></textarea>
 
             <script>
-                async function applyConfig() {{
-                    try {{
-                        // Fetch the configuration JSON file from the local server
-                        const response = await fetch('http://localhost:{self.server_port}/display_config.json');
-                        const config = await response.json();
 
-                        const editor = document.getElementById('editor');
-                        const fontConfig = config.font || {{}};
-                        const editorConfig = config.editor || {{}};
-
-                        // Apply font settings
-                        if (fontConfig.family) editor.style.fontFamily = fontConfig.family;
-                        if (fontConfig.size) editor.style.fontSize = fontConfig.size;
-
-                        // Apply editor settings
-                        editor.style.backgroundColor = editorConfig.backgroundColor || '#FFFFFF';
-                        editor.style.color = editorConfig.textColor || '#000000';
-                        editor.style.lineHeight = editorConfig.lineHeight || '1.6';
-                        editor.style.letterSpacing = editorConfig.letterSpacing || '0.02em';
-                        editor.style.padding = editorConfig.padding || '20px';
-                    }} catch (error) {{
-                        console.error('Failed to load configuration:', error);
-                    }}
-                }}
-
-                applyConfig();
-
-                document.getElementById('editor').focus();
+                const editor = document.getElementById('editor');
+                
+                editor.focus();
 
                 document.addEventListener('keydown', (e) => {{
-                    const editor = document.getElementById('editor');
-                    
                     // Ctrl+W: Close window
                     if (e.ctrlKey && e.key === 'w') {{
                         e.preventDefault();
                         window.pywebview.api.quit();
                     }}
-                    
                     // Ctrl + Increase font size
                     if (e.ctrlKey && e.key === '=') {{
                         e.preventDefault();
                         const currentFontSize = parseFloat(getComputedStyle(editor).fontSize);
                         editor.style.fontSize = (currentFontSize + 1) + 'px';
-                    }}
+                    }};
 
                     // Ctrl - Decrease font size
                     if (e.ctrlKey && e.key === '-') {{
@@ -122,8 +104,7 @@ class TextScratchpadApp:
         </html>
         '''
 
-
-class Api:
+class Api:  
     def __init__(self):
         self._window = None
 
@@ -133,34 +114,24 @@ class Api:
     def quit(self):
         self._window.destroy()
 
-
 def main():
-    # Serve the current directory over HTTP
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    server_port = 8888
-    server = LocalHTTPServer(directory=current_dir, port=server_port)
-    server.start()
-
-    try:
-        app = TextScratchpadApp(server_port)
-        api = Api()
-
-        # Create a borderless window
-        window = webview.create_window(
-            title='Scratchpad',
-            html=app.get_html(),
-            js_api=api,
-            frameless=True,  # Removes title bar
-            resizable=True,
-            width=800,
-            height=600
-        )
-
-        api.set_window(window)
-        # Start the webview
-        webview.start(debug=False)
-    finally:
-        server.stop()  # Stop the server when done
+    app = TextScratchpadApp()
+    api = Api()
+    
+    # Create a borderless window
+    window = webview.create_window(
+        title='Scratchpad', 
+        html=app.get_html(), 
+        js_api=api,
+        frameless=True,  # Removes title bar
+        resizable=True,
+        width=800,
+        height=600
+    )
+    
+    api.set_window(window)
+    # Start the webview
+    webview.start(debug=False)
 
 
 if __name__ == '__main__':
