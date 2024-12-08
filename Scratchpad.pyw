@@ -5,9 +5,7 @@ import webview
 
 class TextScratchpadApp:
     def __init__(self):
-        # Load configuration
         exe_dir = os.path.dirname(sys.executable)
-        # Construct the path to your external file
         self.config_path = os.path.join(exe_dir, 'display_config.json')
         self.load_configuration()
         
@@ -17,7 +15,6 @@ class TextScratchpadApp:
             with open(self.config_path, 'r') as config_file:
                 self.config = json.load(config_file)
         except FileNotFoundError:
-            # Default configuration if file doesn't exist
             self.config = {
                 "font": {
                     "family": "Arial, sans-serif",
@@ -118,19 +115,17 @@ def main():
     app = TextScratchpadApp()
     api = Api()
     
-    # Create a borderless window
     window = webview.create_window(
         title='Scratchpad', 
         html=app.get_html(), 
         js_api=api,
-        frameless=True,  # Removes title bar
+        frameless=True,
         resizable=True,
         width=800,
         height=600
     )
     
     api.set_window(window)
-    # Start the webview
     webview.start(debug=False)
 
 
