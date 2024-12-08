@@ -3,9 +3,9 @@
 
 A minimal text editor for quick note-taking and text manipulation.
 
-Built out of frustration with having to open full-featured text editors and deal with save and prompts even for simple text manipulation operations.
+Built out of frustration with having to open full-featured text editors and deal with save and other prompts even for simple text manipulation operations.
 
-My usecase is to set a AutoHotKey shortcut to open this and do quick text manipulation such as editing before pasting, formatting text. Also great for temporary code snippets, drafting quick messages, or jotting down quick notes without saving.
+My usecase is to set a AutoHotKey shortcut to open the executable and do quick text manipulation such as editing before pasting, formatting text. Also great for temporary code snippets, drafting quick messages, or jotting down quick notes without saving.
 
 ## Features
 
