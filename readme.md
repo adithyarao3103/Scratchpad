@@ -3,6 +3,10 @@
 
 A minimal text editor for quick note-taking and text manipulation.
 
+Built out of frustration with having to open full-featured text editors and deal with save and prompts even for simple text manipulation operations.
+
+My usecase is to set a AutoHotKey shortcut to open this and do quick text manipulation such as editing before pasting, formatting text. Also great for temporary code snippets, drafting quick messages, or jotting down quick notes without saving.
+
 ## Features
 
 - Instant startup with a clean, borderless interface
@@ -12,11 +16,11 @@ A minimal text editor for quick note-taking and text manipulation.
   - `Ctrl+=`: Increase font size
   - `Ctrl+-`: Decrease font size
 - Customizable appearance through `display_config.json`
-- No save functionality - designed for temporary text operations. Does not autosave too. 
+- No save functionality - designed for temporary text operations. Does not autosave too.
 
 ## Usage
 
-There are two ways you can use this. 
+There are two ways you can use this.
 
 1. Directly with the pythonw.exe:  Run `pythonw Scratchpad.pyw`
 2. Compile with pyinstaller: Run `pyinstaller --onefile --name Scratchpad  --windowed  --exclude-module tkinter --exclude display_config.json  Scratchpad.pyw`
@@ -43,7 +47,6 @@ Place the `display_config.json` in the same directory as `Scratchpad.pyw/Scratch
     }
 }
 ```
-
 
 ## Requirements
 
